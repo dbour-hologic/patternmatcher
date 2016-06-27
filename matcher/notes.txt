@@ -1,0 +1,5 @@
+Class: DNA Subject
+Attr: 
+-> sequence
+-> # of hits
+-> location of hits
