@@ -9,19 +9,26 @@ from matching_lib import dna_is_a_match, dna_first_match, dna_match_all
 class TestMatchMethods(unittest.TestCase):
 
 	def test_dna_is_a_match(self):
-		self.assertTrue(dna_is_a_match("ATCC","ATCCCC",0, 0), "Pattern should match with 0 mismatches to the subject.")
-		self.assertTrue(dna_is_a_match("GTCC","ATCCCC",0, 1), "Pattern should match with 1 mismatches to the subject.")
-		self.assertTrue(dna_is_a_match("ATGG","ATCCCC",0, 2), "Pattern should match with 2 mismatches to the subject.")
-		self.assertTrue(dna_is_a_match("GGCC","ATCCCC",0, 3), "Pattern should match with 3 mismatches to the subject.")		
-		self.assertTrue(dna_is_a_match("GGGG","ATCCCC",0, 4), "Pattern should match with 4 mismatches to the subject.")
+		self.assertTrue(dna_is_a_match("ATCC","ATCCCC",0, 0), "Pattern should match with up to 0 mismatches to the subject.")
+		self.assertTrue(dna_is_a_match("GTCC","ATCCCC",0, 1), "Pattern should match with up to 1 mismatches to the subject.")
+		self.assertTrue(dna_is_a_match("ATGG","ATCCCC",0, 2), "Pattern should match with up to 2 mismatches to the subject.")
+		self.assertTrue(dna_is_a_match("GGCC","ATCCCC",0, 3), "Pattern should match with up to 3 mismatches to the subject.")		
+		self.assertTrue(dna_is_a_match("GGGG","ATCCCC",0, 4), "Pattern should match with up to 4 mismatches to the subject.")
+
+		self.assertTrue(dna_is_a_match("NNNN","ATCCCC",0, 0), "Pattern should be able to take IUPAC codes.")
+		self.assertTrue(dna_is_a_match("ATCN","ATCCCC",0, 0), "Pattern should be able to take IUPAC codes.")
+		self.assertTrue(dna_is_a_match("BTCN","ATCCCC",0, 1), "Pattern should be able to take IUPAC codes.")
+
 		self.assertTrue(dna_is_a_match("ATCC","ATCCCC",0,20), "Pattern should not fail even though threshold > length of pattern")
+
 		self.assertFalse(dna_is_a_match("ATCC","ATCCCC",1,0), "Pattern should fail at the index shift.")
+
 		self.assertFalse(dna_is_a_match("AAAAAAA","TA",0, 0), "Pattern should fail to match if its greater than the subject.")
 
 	def test_dna_first_match(self):
 		find_index = dna_first_match("ATCG","GATCGCCC", 0)
 		self.assertEqual(find_index, 1, "First match should be at index 1 with 0 mismatches.")
-		
+
 		find_index_2 = dna_first_match("GTCG","GATCGCCC", 1)
 		self.assertEqual(find_index_2, 1, "First match should at at index 1 with 1 mismatch.")
 
