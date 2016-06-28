@@ -92,6 +92,7 @@ def dna_match_all(pattern, subject_dna, mismatch_tolerance=0):
         list(int). List of indexes of start position or an empty list.
     """
 
+
     list_of_start_indexes = []
 
     for index in range(len(subject_dna)-len(pattern)+1):
