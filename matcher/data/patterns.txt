@@ -1,2 +1,4 @@
 >Pattern1
 TTGATCATGG
+>Pattern2
+TGGATCATCG

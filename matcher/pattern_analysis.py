@@ -6,7 +6,6 @@ Date: 2016-06-28
 
 from Bio import SeqIO
 from Bio.Seq import Seq
-from Bio.Alphabet import IUPAC
 from matching_lib import dna_match_all
 
 class RunIdentifier(object):
@@ -39,33 +38,29 @@ class RunIdentifier(object):
 		self.total_hits = total_hits
 		self.mismatch_tolerance_set = mismatch_tolerance_set
 
+	def get_coordinates(self):
+
+		locations = []
+		for location in self.hit_locations:
+			start_location = location
+			end_location = location + len(self.pattern)-1
+			locations.append((start_location, end_location))
+
+		return locations
+
 	def print_friendly(self):
+
+		print "PATTERN ID: {0}".format(self.pattern_id)
+		print "PATTERN SEQ: {0}".format(self.pattern)
+		print "QUERY_ID: {0}".format(self.id)
+		print "Mismatch tolerance has been set to {0}\n".format(self.mismatch_tolerance_set)
 
 		for location in self.hit_locations:
 			end_point = len(self.pattern) + location - 1
 			print "Pattern: {0}".format(self.pattern)
 			print "Subject: {0}".format(self.subject[location:end_point+1])
-			print "Start Location: {0} End Location: {1}".format(location+1, end_point)
-
-	def print_more(self):
-
-		for location in self.hit_locations:
-
-			end_point = len(self.pattern) + location - 1
-
-			extend_right, extend_left = 4, 4
-
-			if location-4 <= 0:
-				extend_left = location
-			if end_point+4 > len(self.subject):
-				extend_right = len(self.subject) - end_point
-
-
-			pattern_format = " " * extend_left + " " + self.pattern + " " + " " * extend_right
-			subject_format = self.subject[0:extend_left] + " " + self.subject[location:end_point+1] + " " + self.subject[end_point:end_point+extend_right]
-
-			print "Pattern: {0}".format(pattern_format)
-			print "Subject: {0}".format(subject_format)
+			print "Subj Start: {0} Subj End: {1}".format(location+1, end_point)
+			print "\n"
 
 
 class PatternAnalysis(object):
@@ -174,9 +169,53 @@ class PatternAnalysis(object):
 		return len(self.list_of_queries)
 
 	def print_features(self):
+
+		""" Prints results to terminal """
 		for key, value in self.list_of_queries.iteritems():
-			print value[0].print_more()
-			print "________"
+			for items in value:
+				items.print_friendly()
+				print items.get_coordinates()
+				print "##### ----- #####\n"
+
+	def get_json_result(self):
+
+		json_data_dump = []
+
+		# Subj_ID --> "Sequence ID"
+		# Hit_List --> "List of Run Objects"
+
+		for subj_id, hit_list in self.list_of_queries.iteritems():
+			# Key: Subject ID | Value: List of json objs
+			run_maker[subj_id] = []
+
+			for record in hit_list:
+				# This is iterating through a list of patterns
+				# per the subject
+				
+
+	def _json_builder(
+						subj_id,
+						pattern_id,
+						pattern_sequence, 
+						subj_sequence, 
+						start_pos, 
+						end_pos, 
+						tolerance
+					 ):
+
+
+		
+		field_builder = {}
+		field_builder['subject_id'] = subject_id
+		field_builder['pattern_id'] = pattern_id
+		field_builder['pattern_sequence'] = pattern_sequence
+		field_builder['subj_sequence'] = subj_sequence
+		field_builder['start_pos'] = start_pos
+		field_builder['end_pos'] = end_pos
+		field_builder['tolerance'] = tolerance
+
+		return field_builder
+
 
 if __name__ == '__main__':
 
