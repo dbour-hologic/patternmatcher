@@ -7,6 +7,7 @@ Date: 2016-06-28
 from Bio import SeqIO
 from Bio.Seq import Seq
 from matching_lib import dna_match_all
+import json
 
 class RunIdentifier(object):
 
@@ -39,6 +40,13 @@ class RunIdentifier(object):
 		self.mismatch_tolerance_set = mismatch_tolerance_set
 
 	def get_coordinates(self):
+		"""
+		Generates a list with coordinates for the start position
+		and end position of each pattern match.
+
+		Returns:
+			list of coordinate tuples (<start>:<end>)
+		"""
 
 		locations = []
 		for location in self.hit_locations:
@@ -47,6 +55,28 @@ class RunIdentifier(object):
 			locations.append((start_location, end_location))
 
 		return locations
+
+	def get_partial_sequences(self):
+		"""
+		Generates a list of partial sequences from the 
+		coordinate data.
+
+		Returns:
+			dict of subject sequences where pattern has made a match (dict) (int tuple)
+		"""
+
+		# <Key> sequence | <Value> coordinate position to obtain sequence
+		partial_sequences = {}
+
+		for coords in self.get_coordinates():
+			start_position = coords[0]
+			# Note, the end position had +1 added since slice ranges at not inclusive.
+			end_position = coords[1] + 1
+			sub_seq = self.subject[start_position:end_position]
+			partial_sequences[sub_seq] = coords
+
+		return partial_sequences
+
 
 	def print_friendly(self):
 
@@ -179,49 +209,118 @@ class PatternAnalysis(object):
 
 	def get_json_result(self):
 
-		json_data_dump = []
-
-		# Subj_ID --> "Sequence ID"
-		# Hit_List --> "List of Run Objects"
-
-		for subj_id, hit_list in self.list_of_queries.iteritems():
-			# Key: Subject ID | Value: List of json objs
-			run_maker[subj_id] = []
-
-			for record in hit_list:
-				# This is iterating through a list of patterns
-				# per the subject
-				
-
-	def _json_builder(
-						subj_id,
-						pattern_id,
-						pattern_sequence, 
-						subj_sequence, 
-						start_pos, 
-						end_pos, 
-						tolerance
-					 ):
+		"""
+		JSON data for web use
 
 
-		
+		Visual Blueprint
+
+		[	<json_results>
+			{	<subject_list>
+				[	<pattern_list>
+					{	
+						<pattern 1 (json_builder)>
+					},
+					{
+						<pattern 2 (json_builder)>
+					},
+					{
+						<pattern 3 (json_builder)>
+					}
+				]
+			},
+			{
+				<subject_list>
+				[	<pattern_list>
+					{
+						<pattern 1 (json_builder)>
+					},
+					{
+						<pattern 2 (json_builder)>
+					}
+				]
+			},
+		]
+
+		"""
+
+		# Holds the JSON objects 
+		json_results = []
+
+		for subject, run_id in self.list_of_queries.iteritems():
+
+			# Holds the assortment of targets
+			subject_list = {}
+
+			# Holds the assortment of patterns per one subject
+			pattern_list = []
+
+			for run in run_id: # All of the RunIdentifier Objects | Different patterns
+
+				json_obj = self._json_builder(run)
+				pattern_list.append(json_obj)
+			
+			subject_list[subject] = pattern_list
+			json_results.append(subject_list)
+
+		return json.dumps(json_results)
+	
+	def _json_builder(self, run_id):
+
+		"""
+		The json_builder builds only from one 'pattern'.
+
+		Args:
+			run_id - a RunIdentifier object that contains one pattern <RunIdentifier>
+		Returns:
+			a dictionary object containing one pattern and its attributes <dict>
+
+
+		#### #### #### #### ####
+		Visual Blueprint of Object
+		#### #### #### #### ####
+
+		---------------------- Generic Example
+		{ <dict builder> 
+			{
+				<field builder>
+			}
+		}
+		---------------------- Specific Example
+		{ 
+			"Pattern 1" : { 
+							"subject_id" : subject name <str>,
+							"pattern_sequence" : pattern seq <str>, 
+							"subj_sequence" : subject seq <str>,
+							"tolerance" : mismatch tolerance used <int>,
+							"sub_seq" : sub-sequences obtained from hit list as well as their coords <dict>,
+							"hit_coordinates" : a list of start to end coordinates of each hit <list>
+						  }
+		}
+
+
+		"""
+
+		dict_builder = {}
+
 		field_builder = {}
-		field_builder['subject_id'] = subject_id
-		field_builder['pattern_id'] = pattern_id
-		field_builder['pattern_sequence'] = pattern_sequence
-		field_builder['subj_sequence'] = subj_sequence
-		field_builder['start_pos'] = start_pos
-		field_builder['end_pos'] = end_pos
-		field_builder['tolerance'] = tolerance
+		
+		field_builder["subject_id"] = run_id.id
+		field_builder["pattern_sequence"] = run_id.pattern
+		field_builder["subj_sequence"] = run_id.subject
+		field_builder["tolerance"] = run_id.mismatch_tolerance_set
+		field_builder["sub_sequences"] = run_id.get_partial_sequences()
+		field_builder["hit_coordinates"] = run_id.get_coordinates()
 
-		return field_builder
+		dict_builder[run_id.pattern_id] = field_builder
 
+		return dict_builder
 
 if __name__ == '__main__':
 
 	test_run = PatternAnalysis()
-	test_run.run('data/patterns.txt', 'data/2016FASTA.fasta', 3)
-	test_run.print_features()
+	test_run.run('data/patterns.txt', 'data/2016FASTA.fasta', 2)
+	print test_run.get_json_result()
 
 
 
